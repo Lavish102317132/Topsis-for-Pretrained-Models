@@ -1,0 +1,54 @@
+import pandas as pd
+import numpy as np
+
+models = ["BART", "T5", "PEGASUS", "GPT-2"]
+
+data = np.array([
+    [0.89, 7, 8, 0.88],
+    [0.91, 6, 7, 0.90],
+    [0.92, 5, 6, 0.91],
+    [0.87, 9, 9, 0.86]
+], dtype=float)
+
+weights = np.array([1,1,1,1], dtype=float)
+
+impacts = ["+","+","-","+"]
+
+norm = data / np.sqrt((data**2).sum(axis=0))
+
+weighted = norm * weights
+
+best = []
+worst = []
+
+for i in range(len(impacts)):
+    if impacts[i] == "+":
+        best.append(weighted[:,i].max())
+        worst.append(weighted[:,i].min())
+    else:
+        best.append(weighted[:,i].min())
+        worst.append(weighted[:,i].max())
+
+best = np.array(best)
+worst = np.array(worst)
+
+dist_best = np.sqrt(((weighted - best)**2).sum(axis=1))
+dist_worst = np.sqrt(((weighted - worst)**2).sum(axis=1))
+
+score = dist_worst / (dist_best + dist_worst)
+
+rank = score.argsort()[::-1] + 1
+
+result = pd.DataFrame({
+    "Model": models,
+    "Accuracy": data[:,0],
+    "Speed": data[:,1],
+    "Memory": data[:,2],
+    "F1": data[:,3],
+    "Score": score,
+    "Rank": rank
+})
+
+result.to_excel("result.xlsx", index=False)
+
+print(result)
